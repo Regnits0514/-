@@ -3,6 +3,8 @@
 #include <SDL_ttf.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
+#include "game.h"
 #define _CRT_SECURE_NO_WARNINGS
 
 #define SCREEN_WIDTH 1920
@@ -126,8 +128,24 @@ void check_collisions() {
     }
 }
 
+void init_breakout_game() {
+    std::cout << "Breakout Game Initialized.\n";
+    // 초기화 코드
+}
+
+
 // 메인 함수
-int main() {
+void run_breakout_game() {
+    bool game_over = false;
+    // 게임 실행 코드
+    while (!game_over) {
+        // 게임 진행 중
+        // 게임 오버 조건이 충족되면 game_over를 true로 설정
+        // 예를 들어, 뱀이 벽에 부딪히거나 자기 자신과 부딪히면 게임 오버
+        if (score == 0) {
+            game_over = true;
+        }
+    }
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
 
@@ -178,5 +196,4 @@ int main() {
     SDL_DestroyWindow(window);
     TTF_Quit();
     SDL_Quit();
-    return 0;
 }

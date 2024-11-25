@@ -4,6 +4,8 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 #include <stdio.h>
+#include "common.h"
+#include "game.h"
 
 #define SW 1920
 #define SH 1080
@@ -13,16 +15,6 @@
 #define SPEED 5
 
 int p_score = 0, ai_score = 0, missed = 0;
-
-void render_text(SDL_Renderer* renderer, TTF_Font* font, int x, int y, const char* text) {
-    // Fixed the SDL_Color initialization using curly braces
-    SDL_Surface* surface = TTF_RenderText_Solid(font, text, SDL_Color{ 255, 255, 255, 255 });
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect dstrect = { x, y, surface->w, surface->h };
-    SDL_RenderCopy(renderer, texture, NULL, &dstrect);
-    SDL_FreeSurface(surface);
-    SDL_DestroyTexture(texture);
-}
 
 
 void draw_circle(SDL_Renderer* renderer, int x, int y, int radius) {
@@ -37,7 +29,9 @@ void draw_circle(SDL_Renderer* renderer, int x, int y, int radius) {
     }
 }
 
-int main() {
+
+
+void run_pong_game() {
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
 
@@ -58,7 +52,7 @@ int main() {
         const Uint8* keys = SDL_GetKeyboardState(NULL);
         if (keys[SDL_SCANCODE_LSHIFT])
         {
-            p_paddle.y += (keys[SDL_SCANCODE_UP] ? -SPEED/2 : (keys[SDL_SCANCODE_DOWN] ? SPEED/2 : 0));
+            p_paddle.y += (keys[SDL_SCANCODE_UP] ? -SPEED / 2 : (keys[SDL_SCANCODE_DOWN] ? SPEED / 2 : 0));
         }
         else
         {
@@ -95,7 +89,8 @@ int main() {
         draw_circle(renderer, ball_x, ball_y, BALL_R);  // 공을 둥글게 그리기
 
         char score_text[30];
-        sprintf(score_text, "P: %d AI: %d", p_score, ai_score);
+        sprintf_s(score_text, sizeof(score_text), "P: %d AI: %d", p_score, ai_score);
+
         render_text(renderer, font, SW / 2 - 50, 20, score_text);
 
         SDL_RenderPresent(renderer);
@@ -109,5 +104,4 @@ int main() {
     SDL_DestroyWindow(window);
     TTF_Quit();
     SDL_Quit();
-    return 0;
 }

@@ -3,6 +3,8 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
+#include "game.h"
 
 #define SCREEN_WIDTH 1920
 #define SCREEN_HEIGHT 1080
@@ -103,7 +105,27 @@ void render_game(SDL_Renderer* renderer, Snake* snake, Point* food) {
     SDL_RenderPresent(renderer);
 }
 
-int main() {
+void init_snake_game() {
+    std::cout << "Snake Game Initialized.\n";
+    // 초기화 코드
+}
+
+void run_snake_game() {
+    std::cout << "Running Snake Game...\n";
+    // 게임 루프와 종료 조건을 포함한 코드
+    bool quit = false;
+    SDL_Event e;
+
+    // 게임 루프 예시
+    while (!quit) {
+        while (SDL_PollEvent(&e) != 0) {
+            if (e.type == SDL_QUIT) {
+                quit = true;
+            }
+        }
+        // 게임 화면 업데이트 및 렌더링
+    }
+
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("Snake Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -114,14 +136,14 @@ int main() {
     init_snake(&snake);
     generate_food(&food, &snake);
 
-    int game_over = 0;
+    bool game_over = false;
     Uint32 last_move_time = SDL_GetTicks();
 
     while (!game_over) {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) {
-                game_over = 1;
+                game_over = true;
             }
             handle_input(&snake, &e);
         }
@@ -130,7 +152,7 @@ int main() {
             move_snake(&snake);
             int collision = check_collision(&snake, &food);
             if (collision == 1) {
-                game_over = 1;
+                game_over = true;
             }
             else if (collision == 2) {
                 generate_food(&food, &snake);
@@ -145,6 +167,4 @@ int main() {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
-
-    return 0;
 }
