@@ -6,6 +6,11 @@
 #include <stdio.h>
 #include "common.h"
 #include "game.h"
+#include <string.h>
+
+#include "sqlite3.h"
+
+#pragma comment(lib, "sqlite3.lib")
 
 #define SW 1920
 #define SH 1080
@@ -29,6 +34,35 @@ void draw_circle(SDL_Renderer* renderer, int x, int y, int radius) {
     }
 }
 
+void save_score_to_db(const char* player_name, int score, const char* result) {
+    sqlite3* db = nullptr;
+    char* err_msg = nullptr;
+
+    // 데이터베이스 열기
+    int rc = sqlite3_open("pingpong.db", &db);
+
+    if (rc != SQLITE_OK) {
+        printf("SQLite open error: %s\n", sqlite3_errmsg(db));
+        return;
+    }
+
+    // SQL 쿼리 문자열 준비
+    char sql[256];
+    snprintf(sql, sizeof(sql), "INSERT INTO scores (name, score, result) VALUES ('%s', %d, '%s');", player_name, score, result);
+
+    // SQL 쿼리 실행
+    rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+    if (rc != SQLITE_OK) {
+        printf("SQL error: %s\n", err_msg);
+        sqlite3_free(err_msg);  // 에러 메시지 메모리 해제
+    }
+    else {
+        printf("Score saved successfully!\n");
+    }
+
+    // 데이터베이스 연결 닫기
+    sqlite3_close(db);
+}
 
 
 void run_pong_game() {
@@ -71,7 +105,7 @@ void run_pong_game() {
         if (ball_x + BALL_R >= ai_paddle.x && ball_y >= ai_paddle.y && ball_y <= ai_paddle.y + PADDLE_H)
             ball_vel_x = -ball_vel_x;
 
-        if (ball_x - BALL_R <= 0) { ai_score++; missed++; ball_x = SW / 2; ball_y = SH / 2; }
+        if (ball_x - BALL_R <= 0) { ai_score++; ball_x = SW / 2; ball_y = SH / 2; }
         if (ball_x + BALL_R >= SW) { p_score++; ball_x = SW / 2; ball_y = SH / 2; }
 
         if (ball_y > ai_paddle.y + PADDLE_H / 2) ai_paddle.y += SPEED;
@@ -95,13 +129,42 @@ void run_pong_game() {
 
         SDL_RenderPresent(renderer);
 
-        if (missed >= 5) quit = 1;
+        // 점수가 5점에 도달한 경우 게임 종료
+        if (p_score >= 5 || ai_score >= 5) {
+            quit = 1;
+        }
+
         SDL_Delay(16);
     }
+
+    // 게임 종료 후 처리
+    char winner_text[50];
+    const char* result = "";
+    if (p_score >= 5) {
+        sprintf_s(winner_text, sizeof(winner_text), "Player wins with %d points!", p_score);
+        result = "win";  // 플레이어가 이긴 경우
+    }
+    else {
+        sprintf_s(winner_text, sizeof(winner_text), "AI wins with %d points!", ai_score);
+        result = "defeat";  // AI가 이긴 경우
+    }
+
+    printf("%s\n", winner_text); // 콘솔에 승자 출력
 
     TTF_CloseFont(font);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     TTF_Quit();
     SDL_Quit();
+
+    // 이름 입력 받기
+    char player_name[50];
+    printf("Enter your name: ");
+    fgets(player_name, sizeof(player_name), stdin);
+
+    // 줄바꿈 제거
+    player_name[strcspn(player_name, "\n")] = 0;
+
+    // 점수와 이름을 DB에 저장
+    save_score_to_db(player_name, p_score, result);
 }

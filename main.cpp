@@ -2,6 +2,9 @@
 #include <SDL_ttf.h>
 #include <iostream>
 #include "game.h"  // 헤더 파일 포함
+#include "sqlite3.h"
+
+#pragma comment(lib, "sqlite3.lib")
 
 // 메인 함수
 int main(int argc, char* argv[]) {
@@ -62,7 +65,7 @@ int main(int argc, char* argv[]) {
                     if (selected_option > 0) selected_option--;
                     break;
                 case SDLK_DOWN:
-                    if (selected_option < 2) selected_option++;
+                    if (selected_option < 3) selected_option++;
                     break;
                 case SDLK_RETURN:
                     // Enter 키로 선택한 게임 실행
@@ -74,6 +77,9 @@ int main(int argc, char* argv[]) {
                     }
                     else if (selected_option == 2) {
                         run_pong_game();  // Pong 게임 실행
+                    }
+                    else if (selected_option == 3) {
+                        run_tetris_game();  // Tetris 게임 실행
                     }
                     break;
                 case SDLK_ESCAPE:
@@ -100,6 +106,7 @@ int main(int argc, char* argv[]) {
         render_text(renderer, font, "1. Snake Game", 250, 150);
         render_text(renderer, font, "2. Breakout Game", 250, 200);
         render_text(renderer, font, "3. Pong Game", 250, 250);
+        render_text(renderer, font, "4. Tetris Game", 250, 300);
 
         // 선택된 항목 강조
         SDL_Rect highlightRect = { 230, 140 + (selected_option * 50), 180, 40 }; // SDL_Rect로 변수 선언

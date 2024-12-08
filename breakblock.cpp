@@ -7,6 +7,10 @@
 #include "game.h"
 #define _CRT_SECURE_NO_WARNINGS
 
+#include "sqlite3.h"
+
+#pragma comment(lib, "sqlite3.lib")
+
 #define SCREEN_WIDTH 1920
 #define SCREEN_HEIGHT 1080
 #define PADDLE_WIDTH 100
@@ -84,7 +88,36 @@ void draw_game(SDL_Renderer* renderer, TTF_Font* font) {
     SDL_RenderPresent(renderer);
 }
 
-// 공과 블록 충돌 체크
+// SQLite 데이터베이스 연결과 저장을 위한 함수
+void save_score_to_db(const char* player_name, int score) {
+    sqlite3* db = nullptr;
+    char* err_msg = nullptr;
+
+    int rc = sqlite3_open("breakblock.db", &db);
+
+    if (rc != SQLITE_OK) {
+        printf("SQLite open error: %s\n", sqlite3_errmsg(db));
+        return;
+    }
+
+    // SQL 쿼리 문자열 준비
+    char sql[256];
+    snprintf(sql, sizeof(sql), "INSERT INTO scores (name, score) VALUES ('%s', %d);", player_name, score);
+
+    // SQL 쿼리 실행
+    rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+    if (rc != SQLITE_OK) {
+        printf("SQL error: %s\n", err_msg);
+        sqlite3_free(err_msg);
+    }
+    else {
+        printf("Score saved successfully!\n");
+    }
+
+    // 데이터베이스 연결 닫기
+    sqlite3_close(db);
+}
+
 void check_collisions() {
     // 블록과의 충돌
     for (int i = 0; i < BLOCK_ROWS; i++) {
@@ -115,15 +148,34 @@ void check_collisions() {
 
     // 바닥에 닿았을 때
     if (ball.y + ball.h >= SCREEN_HEIGHT) {
-        lives--;
+        lives--;  // 목숨 감소
         if (lives > 0) {
+            // 공과 패들 초기화
             ball.x = SCREEN_WIDTH / 2 - BALL_RADIUS;
-            paddle.x = SCREEN_WIDTH / 2 - BALL_RADIUS;
-            ball.y = SCREEN_HEIGHT - 100 - BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2;
+            paddle.x = SCREEN_WIDTH / 2 - PADDLE_WIDTH / 2;
+            ball.y = SCREEN_HEIGHT - 100 - BALL_RADIUS;  // 공 초기 위치
         }
         else {
             // 게임 종료
+
             printf("Game Over! Final Score: %d\n", score);
+
+            SDL_Delay(2000);  // 2초간 점수 표시 후 게임 종료
+
+            TTF_Quit();
+            SDL_Quit();
+
+            // 이름 입력 받기
+            char player_name[50];
+            printf("Enter your name: ");
+            fgets(player_name, sizeof(player_name), stdin);
+
+            // 줄바꿈 제거
+            player_name[strcspn(player_name, "\n")] = 0;
+
+            // 점수와 이름을 DB에 저장
+            save_score_to_db(player_name, score);
+
         }
     }
 }
@@ -134,18 +186,9 @@ void init_breakout_game() {
 }
 
 
+
 // 메인 함수
 void run_breakout_game() {
-    bool game_over = false;
-    // 게임 실행 코드
-    while (!game_over) {
-        // 게임 진행 중
-        // 게임 오버 조건이 충족되면 game_over를 true로 설정
-        // 예를 들어, 뱀이 벽에 부딪히거나 자기 자신과 부딪히면 게임 오버
-        if (score == 0) {
-            game_over = true;
-        }
-    }
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
 
@@ -156,12 +199,12 @@ void run_breakout_game() {
     init_game();
 
     SDL_Event e;
-    int quit = 0;
+    bool quit = false;
 
-    while (!quit) {
+    while (!quit && lives > 0) {  // lives가 0보다 큰 동안만 게임 진행
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) {
-                quit = 1;
+                quit = true;
             }
         }
 
@@ -189,6 +232,11 @@ void run_breakout_game() {
         draw_game(renderer, font);
 
         SDL_Delay(16); // 약간의 딜레이를 두어 FPS를 60으로 설정
+    }
+
+    // 게임 오버 처리
+    if (lives <= 0) {
+        printf("Game Over! Final Score: %d\n", score);
     }
 
     TTF_CloseFont(font);
